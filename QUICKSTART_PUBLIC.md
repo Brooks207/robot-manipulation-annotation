@@ -53,8 +53,43 @@ metric conversion needs per-camera intrinsics (`fx/fy`, calibration resolution)
 that ship with the internal rig but not with this public dataset. Run depth in
 relative mode or supply intrinsics to enable it.
 
+## 4. (Optional) Real Qwen extractor instead of `rule`
+
+The `rule` extractor emits a dirty long-phrase query on the sorting instruction. The
+`qwen` extractor (`annotation/discovery/qwen_extractor.py`, an OpenAI-compatible HTTP
+client with a few-shot object-extraction prompt) fixes this. It needs a live endpoint —
+choose one:
+
+**A. Self-host with vLLM (GPU):**
+
+```bash
+pip install vllm
+vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+# qwen_endpoint: http://localhost:8000/v1/chat/completions
+```
+
+**B. Hosted OpenAI-compatible API (e.g. Alibaba DashScope):**
+
+```bash
+export QWEN_API_KEY=...
+# qwen_endpoint: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+# qwen_model:    qwen-plus   (set qwen_api_key in the config locally; do not commit it)
+```
+
+Then run and diff against the `rule` baseline:
+
+```bash
+python run_dryrun.py configs/lerobot_so100_qwen.yaml
+diff <(jq -c .queries outputs/so100_dryrun/discovery_queries.jsonl) \
+     <(jq -c .queries outputs/so100_qwen/discovery_queries.jsonl)
+```
+
+Expected: Qwen returns clean object nouns (`["blue cube", "box", "red cube"]`) and drops the
+rule extractor's `"red cube in right box and blue cube in left box"` phrase.
+
 ## Files added for the public path
 
-- `configs/lerobot_so100_dryrun.yaml` — Discovery-only dry-run
+- `configs/lerobot_so100_dryrun.yaml` — Discovery-only dry-run (`rule` extractor)
+- `configs/lerobot_so100_qwen.yaml` — Discovery with a real Qwen endpoint
 - `configs/lerobot_so100_smoke.yaml` — SAM3 segmentation smoke run
 - `annotation/lerobot_v3_dataset.py` — `_coerce_instruction` handles list-valued `tasks`

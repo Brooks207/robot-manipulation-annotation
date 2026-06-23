@@ -1,0 +1,37 @@
+# Discovery with a REAL Qwen extractor (OpenAI-compatible) on public data.
+# Run as dry-run and diff against configs/lerobot_so100_dryrun.yaml (rule extractor)
+# to show that Qwen removes the rule extractor's dirty long-phrase / generic queries.
+#
+#   python run_dryrun.py configs/lerobot_so100_qwen.yaml
+#   diff <(jq .queries outputs/so100_dryrun/discovery_queries.jsonl) \
+#        <(jq .queries outputs/so100_qwen/discovery_queries.jsonl)
+#
+# Point qwen_endpoint/model/api_key at your service (self-hosted vLLM or a hosted
+# OpenAI-compatible API). Do NOT commit real API keys -- set via local edit or env.
+
+dataset_path: ./data/svla_so100_sorting
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top
+dry_run: true
+
+discovery:
+  extractor: qwen
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand, gripper]
+  qwen_endpoint: http://localhost:8000/v1/chat/completions  # vLLM default; or hosted URL
+  qwen_model: Qwen/Qwen2.5-7B-Instruct                       # served model name
+  qwen_api_key: null                                          # set for hosted APIs
+  qwen_temperature: 0.0
+  qwen_max_tokens: 128
+  qwen_timeout: 30.0
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+storage:
+  output_dir: ./outputs/so100_qwen
+
+episode_indices: [0, 1, 2]
