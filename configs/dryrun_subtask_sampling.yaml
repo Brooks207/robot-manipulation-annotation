@@ -1,0 +1,63 @@
+# Dry-run test for subtask-aware sampling (no model loading)
+# Only tests discovery + sampling logic
+
+dataset_path: ./data/svla_so100_sorting
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top
+
+dry_run: true  # Only test discovery and frame sampling
+stage: both
+
+# Test subtask-aware sampling
+episode_indices: [77]  # Longest episode (1081 frames) for clear verification
+sampling:
+  mode: subtask_aware
+  stride_frames: 30  # Sample every 30 frames within each subtask
+  keep_subtask_boundaries: true  # Force include first/last frame of each subtask
+
+discovery:
+  mode: instruction
+  extractor: rule
+  always_include:
+    - robot hand
+    - gripper
+  instruction_source: episode_field
+  instruction_field: expand_task
+  default_instruction: ""
+
+segmentation:
+  model_path: models/sam3
+  model_type: sam3
+  confidence_threshold: 0.5
+  mask_threshold: 0.5
+  max_instances_per_query: 10
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  model_type: depth_anything_v3
+  output_metric: true
+  debug_depth_range: false
+  process_res: 504
+  process_res_method: upper_bound_resize
+  use_ray_pose: false
+  fx: 369.81
+  fy: 341.14
+  calibration_width: 832
+  calibration_height: 480
+
+storage:
+  output_dir: ./outputs/dryrun_subtask_sampling
+  mask_format: parquet
+  depth_format: png16
+  overwrite: false
+
+qc:
+  enabled: false
+  num_frames_per_episode: 10
+  output_dir: null
+  colormap: turbo
+
+checkpoint_dir: null
+num_workers: 1
+log_level: INFO

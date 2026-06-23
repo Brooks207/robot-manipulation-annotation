@@ -1,0 +1,54 @@
+# === Model weights (NEVER commit — download separately) ===
+models/
+*.safetensors
+*.bin
+*.pth
+*.pt
+*.ckpt
+*.onnx
+
+# === Virtual environment ===
+.venv_annotation/
+.venv/
+venv/
+env/
+
+# === Large outputs / annotation results ===
+outputs/
+*.png
+*.jpg
+*.jpeg
+*.npz
+*.npy
+*.mp4
+
+# === Debug archive (one-off diagnostic scripts/images) ===
+archive/
+
+# === Agent / tooling logs ===
+.agent_logs/
+.claude/
+
+# === Python caches ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# === HuggingFace / model caches ===
+hf-cache/
+.cache/
+
+# === OS / editor ===
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# local datasets & run outputs
+data/
+outputs/

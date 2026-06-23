@@ -1,0 +1,38 @@
+# Smoke test on a PUBLIC LeRobot v3.0 dataset: lerobot/svla_so100_sorting
+# Proves the annotation pipeline runs on standard Hugging Face Hub data,
+# not just the internal AnyGrasp format. See QUICKSTART_PUBLIC.md to download.
+#
+# Run (real models, needs GPU + ffmpeg w/ av1 + SAM3 access):
+#   python run_annotate.py configs/lerobot_so100_smoke.yaml --stage segmentation
+
+dataset_path: ./data/svla_so100_sorting   # local copy of the HF dataset
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top                 # SO-100 top camera (640x480)
+
+stage: segmentation                        # SAM3 only; depth needs camera intrinsics
+
+discovery:
+  extractor: rule                          # rule | manual | qwen | mock
+  instruction_source: episode_field
+  instruction_field: tasks                 # LeRobot v3 standard task field (list-valued)
+  always_include: [robot hand, gripper]
+
+sampling:
+  mode: uniform                            # public dataset has no subtask_index
+  frames_per_episode: 8
+
+segmentation:
+  model_path: facebook/sam3                # gated: request access + set HF_TOKEN
+  confidence_threshold: 0.5
+  mask_threshold: 0.5
+
+storage:
+  output_dir: ./outputs/so100_smoke
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 4
+
+episode_indices: [0, 1, 2]                 # 3 episodes is enough for a smoke run

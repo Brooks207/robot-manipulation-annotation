@@ -1,0 +1,66 @@
+# Depth-only stage: loads DA3, NOT SAM3.
+# Output goes to <output_dir>/depth_stage/ (depth/ PNGs + sampling_manifest).
+# Run with: python run_annotate.py configs/depth_only.yaml --stage depth
+#
+# Uses the SAME dataset / sampling / output_dir as seg_only.yaml, so masks
+# (segmentation/) and depth (depth_stage/) align by (episode_idx, frame_idx).
+
+dataset_path: ./data/svla_so100_sorting
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top
+
+dry_run: false
+stage: depth
+
+episode_indices: [0]
+sampling:
+  mode: subtask_aware
+  stride_frames: 90
+  keep_subtask_boundaries: true
+
+discovery:
+  mode: instruction
+  extractor: rule
+  always_include:
+    - robot hand
+    - gripper
+  instruction_source: episode_field
+  instruction_field: expand_task
+  default_instruction: ""
+
+segmentation:
+  model_path: models/sam3
+  model_type: sam3
+  confidence_threshold: 0.5
+  mask_threshold: 0.5
+  max_instances_per_query: 10
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  model_type: depth_anything_v3
+  output_metric: true
+  debug_depth_range: false
+  process_res: 504
+  process_res_method: upper_bound_resize
+  use_ray_pose: false
+  fx: 369.81
+  fy: 341.14
+  calibration_width: 832
+  calibration_height: 480
+
+storage:
+  output_dir: ./outputs/stage_decouple
+  mask_format: parquet
+  depth_format: png16
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 5
+  output_dir: null
+  colormap: turbo
+
+checkpoint_dir: null
+num_workers: 1
+log_level: INFO

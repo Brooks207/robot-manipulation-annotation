@@ -1,0 +1,24 @@
+# Core dependencies for marmalade_annotation pipeline
+
+# Data processing
+numpy>=1.24.0
+pandas>=2.0.0
+pillow>=10.0.0
+
+# Segmentation
+pycocotools>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+
+# Config management
+pyyaml>=6.0.0
+
+# HTTP clients
+requests>=2.31.0
+
+# Optional: For actual model deployment (to be installed when models are ready)
+# torch>=2.0.0
+# transformers>=4.30.0
+# SAM 3 package (TBD)
+# Depth Anything V3 package (TBD)

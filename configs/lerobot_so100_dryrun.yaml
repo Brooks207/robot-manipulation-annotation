@@ -1,0 +1,25 @@
+# Dry-run (Discovery only) on PUBLIC lerobot/svla_so100_sorting.
+# No videos / models / ffmpeg needed -- only reads meta + data parquet.
+# Proves the LeRobot v3 loader and instruction extraction work on Hub data.
+#   python run_dryrun.py configs/lerobot_so100_dryrun.yaml
+
+dataset_path: ./data/svla_so100_sorting
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top
+dry_run: true
+
+discovery:
+  extractor: rule
+  instruction_source: episode_field
+  instruction_field: tasks                 # list-valued LeRobot v3 task column
+  always_include: [robot hand, gripper]
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+storage:
+  output_dir: ./outputs/so100_dryrun
+
+episode_indices: [0, 1, 2]
