@@ -111,6 +111,13 @@ endpoint) removes the rule extractor's dirty long-phrase / fragment queries
 Reproduce: `python run_dryrun.py configs/lerobot_libero_qwen.yaml` against a LIBERO LeRobot-v3
 dataset (point `dataset_path` at your local copy) with a Qwen endpoint configured.
 
+**Cross-embodiment: tabletop arm → bimanual humanoid.** The same config-driven pipeline runs
+unchanged on the Unitree G1 dataset (`configs/lerobot_g1_smoke.yaml --stage both`), producing
+SAM3 masks + DA3 depth on a dual-arm humanoid — no code changes, only a new config. QC triptych
+(RGB | instance masks | depth):
+
+![Unitree G1 QC triptych: RGB, SAM3 masks, DA3 depth](docs/g1_qc_example.png)
+
 ---
 
 ## Key technical note: DA3 metric depth
