@@ -1,0 +1,27 @@
+# Dry-run on a PUBLIC humanoid LeRobot v3 dataset:
+# unitreerobotics/G1_Dex3_ToastedBread_Dataset (Unitree G1, bimanual dexterous hands).
+# Shows the pipeline generalizes from tabletop arms (SO-100 / LIBERO) to a humanoid.
+#   huggingface-cli download unitreerobotics/G1_Dex3_ToastedBread_Dataset \
+#     --repo-type dataset --local-dir ./data/g1_toasted_bread
+#   python run_dryrun.py configs/lerobot_g1_dryrun.yaml
+
+dataset_path: ./data/g1_toasted_bread
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.cam_left_high      # G1 has 4 cams (L/R high + L/R wrist)
+dry_run: true
+
+discovery:
+  extractor: rule
+  instruction_source: episode_field
+  instruction_field: tasks                 # list-valued LeRobot v3 task column
+  always_include: [robot hand, gripper]
+
+sampling:
+  mode: uniform                            # G1 dataset has no subtask_index
+  frames_per_episode: 8
+
+storage:
+  output_dir: ./outputs/g1_dryrun
+
+episode_indices: [0, 1, 2]

@@ -1,0 +1,48 @@
+# Full-pipeline smoke (SAM3 masks + DA3 depth) on the Unitree G1 humanoid dataset.
+# Demonstrates BOTH modalities and cross-embodiment generalization (arm -> humanoid).
+#
+# Depth runs in RELATIVE mode: public datasets don't ship camera intrinsics, so the
+# metric conversion (metric = focal_px * raw / 300) can't be applied. To get metric
+# depth, supply depth.fx / fy / calibration_width / calibration_height and set output_metric: true.
+#
+#   python run_annotate.py configs/lerobot_g1_smoke.yaml --stage both
+#   (needs GPU + ffmpeg + SAM3 access + depth-anything-3)
+
+dataset_path: ./data/g1_toasted_bread
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.cam_left_high
+stage: both
+
+discovery:
+  # G1's task label ("toasted bread") is too terse for rule/qwen to yield rich objects,
+  # so use a manual/oracle query set for a clean cross-embodiment QC demo. Adjust the
+  # object list after eyeballing a frame; always_include adds the robot hand/gripper.
+  extractor: manual
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand, gripper]
+  manual_queries:
+    default: [bread, toaster, plate, bowl]
+
+sampling:
+  mode: uniform
+  frames_per_episode: 6
+
+segmentation:
+  model_path: facebook/sam3                # gated: request access + set HF_TOKEN
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  output_metric: false                     # relative depth (no intrinsics for public data)
+  debug_depth_range: true
+
+storage:
+  output_dir: ./outputs/g1_smoke
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 3
+
+episode_indices: [0, 1, 2]
