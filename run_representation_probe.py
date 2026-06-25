@@ -39,7 +39,8 @@ import pandas as pd
 import pycocotools.mask as mask_util
 from PIL import Image
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_val_score
 
 sys.path.insert(0, str(Path(__file__).parent))
 from annotation.lerobot_v3_dataset import LeRobotV3Dataset  # noqa: E402
@@ -145,7 +146,7 @@ def main() -> None:
         needed_frames[episode_idx].append(frame_idx)
 
     frame_cache: dict[tuple[int, int], np.ndarray] = {}
-    rgb_X, depthcat_X, y, skipped = [], [], [], 0
+    rgb_X, depthcat_X, y, instance_meta, skipped = [], [], [], [], 0
 
     for (episode_idx, frame_idx), group in masks_df.groupby(["episode_idx", "frame_idx"]):
         cache_key = (episode_idx, frame_idx)
@@ -190,6 +191,10 @@ def main() -> None:
             rgb_X.append(rgb_features(frame, mask))
             depthcat_X.append(depth_features(depth_m, mask))
             y.append(row["category"])
+            instance_meta.append(
+                {"episode_idx": episode_idx, "frame_idx": frame_idx,
+                 "instance_id": int(row["instance_id"]), "category": row["category"]}
+            )
 
     if not y:
         logger.error("No usable mask instances (frame/depth alignment failed). Aborting.")
@@ -203,17 +208,35 @@ def main() -> None:
     logger.info("Usable instances: %d (skipped %d) across %d categories",
                 len(y), skipped, len(set(y)))
 
+    # Persist extracted features + metadata so further analysis (confusion matrices,
+    # category-pair hypotheses, different classifiers) can run locally without needing
+    # the original dataset videos again.
+    np.savez(
+        args.out / "probe_features.npz",
+        rgb_X=rgb_X, depth_X=depth_X, y=y,
+        episode_idx=np.array([m["episode_idx"] for m in instance_meta]),
+        frame_idx=np.array([m["frame_idx"] for m in instance_meta]),
+        instance_id=np.array([m["instance_id"] for m in instance_meta]),
+    )
+
     min_class_count = pd.Series(y).value_counts().min()
     n_splits = max(2, min(5, int(min_class_count)))
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
     clf = LogisticRegression(max_iter=2000)
 
     results = {}
+    confusion_by_name = {}
     for name, X in [("rgb_only", rgb_X), ("rgb_plus_depth", rgbd_X)]:
         scores = cross_val_score(clf, X, y, cv=cv)
         results[name] = {"mean": float(scores.mean()), "std": float(scores.std()),
                           "folds": scores.tolist()}
         logger.info("%s: %.3f +/- %.3f (n_splits=%d)", name, scores.mean(), scores.std(), n_splits)
+        # Out-of-fold predictions (each instance predicted by a fold that never saw it
+        # during training) -> an honest confusion matrix, not a train-set readback.
+        oof_pred = cross_val_predict(clf, X, y, cv=cv)
+        labels = sorted(set(y))
+        cm = confusion_matrix(y, oof_pred, labels=labels)
+        confusion_by_name[name] = {"labels": labels, "matrix": cm.tolist()}
 
     report = {
         "n_instances": int(len(y)),
@@ -221,8 +244,22 @@ def main() -> None:
         "n_splits": n_splits,
         "category_counts": pd.Series(y).value_counts().to_dict(),
         "results": results,
+        "confusion_matrices": confusion_by_name,
     }
     (args.out / "probe_results.json").write_text(json.dumps(report, indent=2))
+
+    # Hypothesis check: does depth specifically reduce confusion between categories
+    # that look visually similar but differ geometrically (e.g. "bottom drawer" vs
+    # "cabinet" -- both wood/grey furniture, different shape/depth profile)?
+    pair_lines = []
+    labels = confusion_by_name["rgb_only"]["labels"]
+    for a, b in [("bottom drawer", "cabinet")]:
+        if a in labels and b in labels:
+            ia, ib = labels.index(a), labels.index(b)
+            for name in ("rgb_only", "rgb_plus_depth"):
+                cm = np.array(confusion_by_name[name]["matrix"])
+                confused = cm[ia, ib] + cm[ib, ia]
+                pair_lines.append(f"- {name}: {a!r} <-> {b!r} confused {confused} times (out-of-fold)")
 
     delta = results["rgb_plus_depth"]["mean"] - results["rgb_only"]["mean"]
     md = [
@@ -237,6 +274,14 @@ def main() -> None:
         f"| RGB + depth (13-dim) | {results['rgb_plus_depth']['mean']:.3f} +/- {results['rgb_plus_depth']['std']:.3f} |",
         "",
         f"**Delta: {delta:+.3f}** ({'depth helped' if delta > 0.01 else 'no clear benefit from depth' if abs(delta) <= 0.01 else 'depth hurt'}).",
+        "",
+        "## Hypothesis check: visually-similar, geometrically-different pair",
+        "",
+        "Out-of-fold confusion counts for `bottom drawer` vs `cabinet` (both wood/grey "
+        "furniture in this dataset -- a pair where depth, not color, should help if it "
+        "helps anywhere):",
+        "",
+        *(pair_lines or ["- (pair not present in this run's categories)"]),
         "",
         "## Category counts (after dropping rare categories)",
         "",
