@@ -41,6 +41,8 @@ from PIL import Image
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 sys.path.insert(0, str(Path(__file__).parent))
 from annotation.lerobot_v3_dataset import LeRobotV3Dataset  # noqa: E402
@@ -222,7 +224,10 @@ def main() -> None:
     min_class_count = pd.Series(y).value_counts().min()
     n_splits = max(2, min(5, int(min_class_count)))
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
-    clf = LogisticRegression(max_iter=2000)
+    # Standardize first: RGB color stats and depth stats live on very different
+    # numeric scales, which otherwise causes poor lbfgs convergence and lets the
+    # larger-scale feature dominate for reasons unrelated to information content.
+    clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000))
 
     results = {}
     confusion_by_name = {}
