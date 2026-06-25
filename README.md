@@ -89,6 +89,30 @@ python run_annotate.py configs/lerobot_so100_smoke.yaml --stage segmentation  # 
 
 ---
 
+## Results (validated on LIBERO, LeRobot v3)
+
+End-to-end SAM3 segmentation run on LIBERO manipulation episodes (`configs/lerobot_libero_smoke.yaml`):
+**132 mask instances** across sampled frames, mean confidence **0.70**, with clean object
+categories (`stove`, `moka pot`, `cabinet`, `bottom drawer`, `microwave`, `black bowl`,
+`yellow and white mug`, `robot hand`). QC triptych (RGB | instance masks | depth):
+
+![LIBERO segmentation QC](docs/libero_qc_example.png)
+
+**Discovery: `rule` vs `qwen` extractor.** A locally self-hosted Qwen (vLLM, OpenAI-compatible
+endpoint) removes the rule extractor's dirty long-phrase / fragment queries
+(full table: [`docs/rule_vs_qwen.md`](docs/rule_vs_qwen.md)):
+
+| instruction | `rule` (noisy) | `qwen` (clean) |
+|---|---|---|
+| turn on the stove and put the moka pot on it | `stove and put moka pot on it` | `moka pot`, `stove` |
+| put the yellow and white mug in the microwave and close it | `yellow and`, `yellow and white mug in microwave and close it` | `microwave`, `yellow and white mug` |
+| put both the alphabet soup and the cream cheese box in the basket | `alphabet soup and cream cheese box in basket`, `box` | `alphabet soup`, `basket`, `cream cheese box` |
+
+Reproduce: `python run_dryrun.py configs/lerobot_libero_qwen.yaml` against a LIBERO LeRobot-v3
+dataset (point `dataset_path` at your local copy) with a Qwen endpoint configured.
+
+---
+
 ## Key technical note: DA3 metric depth
 
 DA3 must be loaded with `from_pretrained` — constructing `DepthAnything3(model_name=...)`

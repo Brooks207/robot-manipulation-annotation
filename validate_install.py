@@ -85,8 +85,8 @@ def check_configs():
     script_dir = Path(__file__).parent
 
     configs = [
-        "configs/anygrasp_dryrun.yaml",
-        "configs/anygrasp_full.yaml",
+        "configs/lerobot_so100_dryrun.yaml",
+        "configs/lerobot_so100_smoke.yaml",
     ]
 
     all_exist = True
@@ -173,8 +173,8 @@ def main():
     if all_passed:
         print("\n🎉 All checks passed! Pipeline is ready to use.")
         print("\nNext steps:")
-        print("  1. Dry-run: python run_dryrun.py configs/anygrasp_dryrun.yaml")
-        print("  2. Full test: python run_annotate.py configs/anygrasp_full.yaml --use-mock")
+        print("  1. Dry-run: python run_dryrun.py configs/lerobot_so100_dryrun.yaml")
+        print("  2. Full test: python run_annotate.py configs/lerobot_so100_smoke.yaml --use-mock")
         return 0
     else:
         print("\n⚠️  Some checks failed. Please fix the issues above.")

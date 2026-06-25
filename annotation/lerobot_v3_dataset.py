@@ -370,7 +370,7 @@ class LeRobotV3Dataset:
     def _coerce_instruction(value: Any) -> str:
         """Coerce an instruction cell to text.
 
-        Handles plain string fields (e.g. AnyGrasp `expand_task`) as well as
+        Handles plain string fields (e.g. a string `expand_task`) as well as
         the list-valued `tasks` column used by standard LeRobot v3 datasets,
         where an episode may carry one or more natural-language task strings.
         Joining the parts lets a single episode with multiple tasks still yield

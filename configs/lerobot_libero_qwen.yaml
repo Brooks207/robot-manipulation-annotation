@@ -1,0 +1,36 @@
+# Discovery with a REAL Qwen extractor (OpenAI-compatible) on a LOCAL LeRobot v3 dataset.
+# Run as dry-run and diff against configs/lerobot_libero_dryrun.yaml (rule extractor)
+# to show that Qwen removes the rule extractor's dirty long-phrase / generic queries.
+#
+#   python run_dryrun.py configs/lerobot_libero_qwen.yaml
+#   diff <(jq -c .queries outputs/libero_dryrun/discovery_queries.jsonl) \
+#        <(jq -c .queries outputs/libero_qwen/discovery_queries.jsonl)
+#
+# Points at the self-hosted vLLM already running on this server (Qwen3-8B @ :8000).
+
+dataset_path: ./data/libero
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.image
+dry_run: true
+
+discovery:
+  extractor: qwen
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand, gripper]
+  qwen_endpoint: http://localhost:8000/v1/chat/completions
+  qwen_model: qwen3                 # served-model-name on the local vLLM
+  qwen_api_key: null
+  qwen_temperature: 0.0
+  qwen_max_tokens: 128
+  qwen_timeout: 60.0
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+storage:
+  output_dir: ./outputs/libero_qwen
+
+episode_indices: [0, 43, 78, 110, 143]

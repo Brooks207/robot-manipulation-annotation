@@ -1,5 +1,5 @@
 # Test subtask-aware frame sampling
-# Picks one long episode from anygrasp to verify subtask sampling
+# Picks one long episode to verify subtask sampling
 
 dataset_path: ./data/svla_so100_sorting
 dataset_type: lerobot_v3

@@ -1,6 +1,6 @@
 # Quickstart: Reproduce on a Public LeRobot v3 Dataset
 
-This pipeline was developed against an internal AnyGrasp dataset. To make it
+This pipeline was developed against an internal robot dataset. To make it
 **reproducible by anyone**, it also runs on the public
 [`lerobot/svla_so100_sorting`](https://huggingface.co/datasets/lerobot/svla_so100_sorting)
 dataset (LeRobot v3.0, 52 episodes, Apache-2.0) with **config-only changes**.
@@ -10,7 +10,7 @@ dataset (LeRobot v3.0, 52 episodes, Apache-2.0) with **config-only changes**.
 The loader (`annotation/lerobot_v3_dataset.py`) reads the standard LeRobot v3.0
 layout directly: `meta/episodes/chunk-*/file-*.parquet`, `data/chunk-*/file-*.parquet`,
 `videos/<camera>/chunk-*/file-*.mp4`. The only adaptation needed for arbitrary Hub
-datasets was instruction extraction: internal AnyGrasp stores a string `expand_task`
+datasets was instruction extraction: that internal dataset stored a string `expand_task`
 field, while standard LeRobot v3 stores a **list-valued `tasks`** column. The loader
 now coerces both (`_coerce_instruction`), so `instruction_field: tasks` just works.
 

@@ -1,6 +1,6 @@
 # Smoke test on a PUBLIC LeRobot v3.0 dataset: lerobot/svla_so100_sorting
 # Proves the annotation pipeline runs on standard Hugging Face Hub data,
-# not just the internal AnyGrasp format. See QUICKSTART_PUBLIC.md to download.
+# not just one internal dataset format. See QUICKSTART_PUBLIC.md to download.
 #
 # Run (real models, needs GPU + ffmpeg w/ av1 + SAM3 access):
 #   python run_annotate.py configs/lerobot_so100_smoke.yaml --stage segmentation

@@ -1,0 +1,25 @@
+# Dry-run (Discovery only) on a LOCAL LeRobot v3 dataset (LIBERO (LeRobot v3, franka)).
+# No videos / models / ffmpeg needed -- only reads meta + data parquet.
+# Proves the LeRobot v3 loader + instruction extraction work on local-disk data.
+#   python run_dryrun.py configs/lerobot_libero_dryrun.yaml
+
+dataset_path: ./data/libero
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.image
+dry_run: true
+
+discovery:
+  extractor: rule
+  instruction_source: episode_field
+  instruction_field: tasks                 # list-valued LeRobot v3 task column
+  always_include: [robot hand, gripper]
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+storage:
+  output_dir: ./outputs/libero_dryrun
+
+episode_indices: [0, 43, 78, 110, 143]
