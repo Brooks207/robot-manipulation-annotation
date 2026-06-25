@@ -118,6 +118,14 @@ SAM3 masks + DA3 depth on a dual-arm humanoid — no code changes, only a new co
 
 ![Unitree G1 QC triptych: RGB, SAM3 masks, DA3 depth](docs/g1_qc_example.png)
 
+**Does the depth modality actually matter?** A linear-probing experiment on the same
+mask instances tests this directly rather than assuming it: after fixing a feature-scaling
+bug that was masking the true signal, RGB-only classification reaches only 0.547 accuracy,
+RGB+depth reaches 0.778, and richer shape-aware depth features (histogram + gradient +
+planar-fit residual) reach 0.824 — and confusion between a visually-similar,
+geometrically-different pair (`bottom drawer` vs `cabinet`) drops monotonically from 21 to
+10 to 6. Full writeup, including the bug and the fix: [`docs/representation_probe.md`](docs/representation_probe.md).
+
 ---
 
 ## Key technical note: DA3 metric depth
