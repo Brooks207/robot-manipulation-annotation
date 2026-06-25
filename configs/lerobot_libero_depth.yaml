@@ -1,0 +1,56 @@
+# DA3 METRIC depth on LIBERO (LeRobot v3, franka simulation).
+#
+# Camera intrinsics derived from robosuite agentview (fovy=45deg, 512x512):
+#   f = (512/2) / tan(45deg/2) = 256 / tan(22.5deg) ≈ 618.1 px
+#   cx = cy = 256
+# Source: robosuite/utils/camera_utils.py (get_camera_intrinsic_matrix)
+# These are exact simulation values, not estimates — honest metric depth.
+#
+# Run AFTER the segmentation smoke has already populated the checkpoint, so this
+# only adds depth outputs to the same episodes/frames (independent stage resume):
+#   python run_annotate.py configs/lerobot_libero_depth.yaml --stage depth
+#
+# Or run both modalities together from scratch:
+#   python run_annotate.py configs/lerobot_libero_depth.yaml --stage both
+
+dataset_path: ./data/libero
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.image
+
+stage: depth
+
+discovery:
+  extractor: qwen
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand, gripper]
+  qwen_endpoint: http://localhost:8000/v1/chat/completions
+  qwen_model: qwen3
+  qwen_api_key: null
+  qwen_temperature: 0.0
+  qwen_max_tokens: 128
+  qwen_timeout: 60.0
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  output_metric: true
+  fx: 618.1                        # robosuite agentview fovy=45 @ 512x512
+  fy: 618.1
+  calibration_width: 512
+  calibration_height: 512
+  debug_depth_range: true          # prints raw + metric min/max to verify first run
+
+storage:
+  output_dir: ./outputs/libero_smoke  # same dir as segmentation — depth goes to depth_stage/
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 4
+
+episode_indices: [0, 43, 78]
