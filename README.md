@@ -91,12 +91,12 @@ python run_annotate.py configs/lerobot_so100_smoke.yaml --stage segmentation  # 
 
 ## Results (validated on LIBERO, LeRobot v3)
 
-End-to-end SAM3 segmentation run on LIBERO manipulation episodes (`configs/lerobot_libero_smoke.yaml`):
-**132 mask instances** across sampled frames, mean confidence **0.70**, with clean object
-categories (`stove`, `moka pot`, `cabinet`, `bottom drawer`, `microwave`, `black bowl`,
-`yellow and white mug`, `robot hand`). QC triptych (RGB | instance masks | depth):
+End-to-end run on LIBERO manipulation episodes (`configs/lerobot_libero_depth.yaml --stage both`):
+SAM3 instance masks **and** Depth-Anything-3 **metric** depth on the same sampled frames, with
+clean object categories (`stove`, `moka pot`, `cabinet`, `bottom drawer`, `microwave`,
+`black bowl`, `yellow and white mug`, `robot hand`). QC triptych (RGB | instance masks | metric depth):
 
-![LIBERO segmentation QC](docs/libero_qc_example.png)
+![LIBERO QC triptych: RGB, SAM3 masks, DA3 metric depth](docs/libero_qc_example.png)
 
 **Discovery: `rule` vs `qwen` extractor.** A locally self-hosted Qwen (vLLM, OpenAI-compatible
 endpoint) removes the rule extractor's dirty long-phrase / fragment queries
