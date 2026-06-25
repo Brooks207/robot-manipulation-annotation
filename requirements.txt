@@ -1,8 +1,9 @@
-# Core dependencies for marmalade_annotation pipeline
+# Core dependencies for the robot manipulation annotation pipeline
 
 # Data processing
 numpy>=1.24.0
 pandas>=2.0.0
+pyarrow>=10.0.0          # LeRobot v3 parquet loader (annotation/lerobot_v3_dataset.py)
 pillow>=10.0.0
 
 # Segmentation
