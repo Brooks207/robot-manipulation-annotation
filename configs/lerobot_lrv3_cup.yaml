@@ -1,0 +1,44 @@
+# lerobotv3.0: pick_green_cup_person_v30 (real humanoid, top camera)
+# Depth is RELATIVE (camera intrinsics unknown for real robot).
+# Green paper cup = open cylindrical shape; contrast with flat book and bottle coke.
+
+dataset_path: /mnt/oss/Data/lerobotv3.0/pick_green_cup_person_v30
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.top
+
+stage: both
+
+discovery:
+  extractor: qwen
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand]
+  qwen_endpoint: http://localhost:8000/v1/chat/completions
+  qwen_model: qwen3
+  qwen_api_key: null
+  qwen_temperature: 0.0
+  qwen_max_tokens: 128
+  qwen_timeout: 60.0
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+segmentation:
+  model_path: facebook/sam3
+  device: cuda
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  output_metric: false
+
+storage:
+  output_dir: ./outputs/lrv3_cup
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 2
+
+episode_indices: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
