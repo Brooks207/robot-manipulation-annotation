@@ -56,7 +56,10 @@ from run_representation_probe import (  # noqa: E402
     load_depth_meters,
     rgb_features,
 )
-from run_representation_probe_richer_depth import depth_features_rich  # noqa: E402
+from run_representation_probe_richer_depth import (  # noqa: E402
+    DEPTH_RICH_DIM,
+    depth_features_rich,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -163,6 +166,7 @@ def main() -> None:
             rgb_X=rgb_X, y=y,
             episode_idx=episode_idx, frame_idx=frame_idx, instance_id=instance_id,
         )
+        # Note: depth_rich_X is extracted later (after filtering) and saved separately.
 
     n_total = len(y)
     logger.info("Total instances before filtering: %d across %d categories, %d episodes",
@@ -206,12 +210,13 @@ def main() -> None:
             depth_cache[ck] = load_depth_meters(args.depth_dir, args.camera_name, ep, fr)
         dm = depth_cache[ck]
         depth_rich_X.append(
-            depth_features_rich(dm, mask) if dm is not None else np.zeros(15, dtype=np.float32)
+            depth_features_rich(dm, mask) if dm is not None else np.zeros(DEPTH_RICH_DIM, dtype=np.float32)
         )
     depth_rich_X = np.stack(depth_rich_X)
 
     feature_sets: dict[str, np.ndarray] = {
         "rgb_only": rgb_X,
+        "depth_only": depth_rich_X,
         "rgb_plus_depth_rich": np.concatenate([rgb_X, depth_rich_X], axis=1),
     }
 

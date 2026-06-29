@@ -73,7 +73,7 @@ def main():
     print(f"Loading {len(args.inputs)} sub-dataset probes...")
     X_rgb, X_depth, y, groups = merge(args.inputs)
 
-    X_rgb_depth = np.concatenate([X_rgb, X_depth], axis=1)
+    X_depth_rgb = np.concatenate([X_rgb, X_depth], axis=1)
 
     print(f"\nPooled: {len(y)} instances, {len(np.unique(y))} categories, "
           f"{len(np.unique(groups))} unique episode groups")
@@ -81,11 +81,14 @@ def main():
 
     print("Running episode-level GroupKFold probes...")
     print("(depth = RELATIVE — intrinsics unknown for real-robot camera)\n")
-    s_rgb = run_probe(X_rgb, y, groups, "rgb_only (9-dim)")
-    s_both = run_probe(X_rgb_depth, y, groups, "rgb + depth_rich (24-dim)")
+    s_rgb   = run_probe(X_rgb,       y, groups, f"rgb_only ({X_rgb.shape[1]}-dim)")
+    s_depth = run_probe(X_depth,     y, groups, f"depth_only ({X_depth.shape[1]}-dim)")
+    s_both  = run_probe(X_depth_rgb, y, groups, f"rgb + depth_rich ({X_depth_rgb.shape[1]}-dim)")
 
-    delta = s_both.mean() - s_rgb.mean()
-    print(f"\n  depth contribution: {delta:+.3f} acc")
+    delta_h1 = s_both.mean() - s_rgb.mean()
+    delta_h2 = s_depth.mean() - (1.0 / len(np.unique(y)))
+    print(f"\n  H2 (depth_only vs chance): {delta_h2:+.3f} acc above {1/len(np.unique(y)):.3f}")
+    print(f"  H1 (rgb+depth vs rgb):     {delta_h1:+.3f} acc")
     print("  Note: depth is RELATIVE (no metric scale). Signal reflects")
     print("  geometric shape differences, not absolute depth values.\n")
 
