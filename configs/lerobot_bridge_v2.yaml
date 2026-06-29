@@ -1,0 +1,61 @@
+# Sub-experiment C: BridgeData V2 (real Franka arm, H3 test)
+# Tests whether depth adds signal on top of SigLIP-SO400M on real-world data.
+# SigLIP is in-distribution on real footage (no sim domain gap).
+#
+# Camera name: verify with inspect script before running —
+#   python3 -c "
+#   import pyarrow.parquet as pq, json
+#   info = json.load(open('./data/bridge_v2/meta/info.json'))
+#   print(info.get('camera_names', info.get('video_keys', 'unknown')))
+#   "
+# Common names in BridgeData V2: observation.images.image_0
+#
+# episode_indices: populated by scripts/bridge_sample.py (150 episodes).
+# Replace the placeholder below with the output of that script.
+#
+# Run:
+#   python scripts/bridge_sample.py --meta-dir ./data/bridge_v2/meta
+#   # paste the episode_indices output here, then:
+#   python run_annotate.py configs/lerobot_bridge_v2.yaml --stage both
+
+dataset_path: ./data/bridge_v2
+dataset_type: lerobot_v3
+camera_names:
+  - observation.images.image_0   # VERIFY before running
+
+stage: both
+
+discovery:
+  extractor: qwen
+  instruction_source: episode_field
+  instruction_field: tasks
+  always_include: [robot hand, gripper]
+  qwen_endpoint: http://localhost:8000/v1/chat/completions
+  qwen_model: qwen3
+  qwen_api_key: null
+  qwen_temperature: 0.0
+  qwen_max_tokens: 128
+  qwen_timeout: 60.0
+
+sampling:
+  mode: uniform
+  frames_per_episode: 8
+
+segmentation:
+  model_path: facebook/sam3
+  device: cuda
+
+depth:
+  model_path: depth-anything/DA3METRIC-LARGE
+  output_metric: false    # no intrinsics for BridgeData cameras; relative depth
+
+storage:
+  output_dir: ./outputs/bridge_v2
+  overwrite: false
+
+qc:
+  enabled: true
+  num_frames_per_episode: 1
+
+# PLACEHOLDER — replace with output of scripts/bridge_sample.py
+episode_indices: []
