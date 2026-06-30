@@ -214,6 +214,16 @@ def main() -> None:
         )
     depth_rich_X = np.stack(depth_rich_X)
 
+    # Save filtered features (RGB + depth) for local ablations and cross-dataset merge.
+    np.savez(
+        args.out / "all_features.npz",
+        X_rgb=rgb_X, X_depth=depth_rich_X, y=y,
+        episode_idx=episode_idx,
+        frame_idx=np.array([m["frame_idx"] for m in meta]),
+        instance_id=np.array([m["instance_id"] for m in meta]),
+    )
+    logger.info("Saved filtered features → %s/all_features.npz", args.out)
+
     feature_sets: dict[str, np.ndarray] = {
         "rgb_only": rgb_X,
         "depth_only": depth_rich_X,
@@ -266,7 +276,8 @@ def main() -> None:
     results: dict[str, dict] = {}
     confusion_by_name: dict[str, dict] = {}
     for name, X in feature_sets.items():
-        scores = cross_val_score(clf, X, y, groups=episode_idx, cv=cv)
+        scores = cross_val_score(clf, X, y, groups=episode_idx, cv=cv,
+                                 scoring="balanced_accuracy")
         results[name] = {
             "mean": float(scores.mean()),
             "std": float(scores.std()),
@@ -318,7 +329,7 @@ def main() -> None:
         f"**N:** {len(y)} instances, {n_episodes} episodes, {len(set(y))} categories "
         f"(categories with < {args.min_episodes_per_class} distinct episodes dropped).",
         "",
-        "| Feature set | Dims | Accuracy (mean ± std) | Δ vs rgb_only |",
+        "| Feature set | Dims | Balanced Accuracy (mean ± std) | Δ vs rgb_only |",
         "|---|---|---|---|",
     ]
     for name, r in results.items():

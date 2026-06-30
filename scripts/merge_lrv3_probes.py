@@ -1,17 +1,17 @@
 """
-Merge probe_features.npz from multiple lerobotv3.0 sub-datasets into a single
+Merge all_features.npz from multiple lerobotv3.0 sub-datasets into a single
 pooled probe, then run episode-level GroupKFold classification.
 
 Usage (run locally after bringing back server outputs):
     python scripts/merge_lrv3_probes.py \
-        --inputs outputs/lrv3_book_probe/probe_features.npz \
-                 outputs/lrv3_cup_probe/probe_features.npz \
-                 outputs/lrv3_coke_probe/probe_features.npz \
+        --inputs outputs/lrv3_book_probe/all_features.npz \
+                 outputs/lrv3_cup_probe/all_features.npz \
+                 outputs/lrv3_coke_probe/all_features.npz \
         --out outputs/lrv3_merged_probe
 
-Each probe_features.npz is expected to have arrays:
+Each all_features.npz is expected to have arrays:
     X_rgb       (N, 9)
-    X_depth     (N, 15)  — depth_rich features
+    X_depth     (N, 27)  — 27-dim depth_rich features (DEPTH_RICH_DIM=27)
     y           (N,)     — string category labels
     episode_idx (N,)     — episode index within that sub-dataset
 """
@@ -57,7 +57,7 @@ def run_probe(X, y, groups, label):
     n_eps = len(np.unique(groups))
     cv = LeaveOneGroupOut() if n_eps <= 10 else GroupKFold(n_splits=min(10, n_eps))
     clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000, C=1.0))
-    scores = cross_val_score(clf, X, y, groups=groups, cv=cv, scoring="accuracy")
+    scores = cross_val_score(clf, X, y, groups=groups, cv=cv, scoring="balanced_accuracy")
     print(f"  {label:30s}: {scores.mean():.3f} ± {scores.std():.3f}  "
           f"(n_folds={len(scores)}, n_eps={n_eps})")
     return scores
@@ -79,16 +79,19 @@ def main():
           f"{len(np.unique(groups))} unique episode groups")
     print(f"Categories: {sorted(np.unique(y).tolist())}\n")
 
-    print("Running episode-level GroupKFold probes...")
+    print("Running episode-level GroupKFold probes (balanced accuracy)...")
     print("(depth = RELATIVE — intrinsics unknown for real-robot camera)\n")
     s_rgb   = run_probe(X_rgb,       y, groups, f"rgb_only ({X_rgb.shape[1]}-dim)")
     s_depth = run_probe(X_depth,     y, groups, f"depth_only ({X_depth.shape[1]}-dim)")
     s_both  = run_probe(X_depth_rgb, y, groups, f"rgb + depth_rich ({X_depth_rgb.shape[1]}-dim)")
 
+    n_classes = len(np.unique(y))
+    chance = 1.0 / n_classes
     delta_h1 = s_both.mean() - s_rgb.mean()
-    delta_h2 = s_depth.mean() - (1.0 / len(np.unique(y)))
-    print(f"\n  H2 (depth_only vs chance): {delta_h2:+.3f} acc above {1/len(np.unique(y)):.3f}")
-    print(f"  H1 (rgb+depth vs rgb):     {delta_h1:+.3f} acc")
+    delta_h2 = s_depth.mean() - chance
+    print(f"\n  Random-chance baseline (1/{n_classes}): {chance:.3f}")
+    print(f"  H2 (depth_only vs chance):  {delta_h2:+.3f} balanced acc above chance")
+    print(f"  H1 (rgb+depth vs rgb_only): {delta_h1:+.3f} balanced acc")
     print("  Note: depth is RELATIVE (no metric scale). Signal reflects")
     print("  geometric shape differences, not absolute depth values.\n")
 
