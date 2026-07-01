@@ -135,10 +135,32 @@ def main() -> None:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--min-episodes-per-class", type=int, default=3,
                          help="Drop categories that appear in fewer than this many distinct episodes.")
+    parser.add_argument("--category-override", type=Path,
+                         help="Optional CSV with columns (episode_index, category) — e.g. "
+                              "*_labels.csv from scripts/bridge_filter.py. Replaces the "
+                              "discovery-pipeline's per-instance 'category' label with a "
+                              "hand-picked, episode-level category, mirroring how LIBERO's "
+                              "task groups (not Qwen inference) define ground-truth categories. "
+                              "Episodes absent from the override are dropped.")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
     masks_df = pd.read_parquet(args.masks)
+
+    override_map: dict[int, str] | None = None
+    if args.category_override:
+        override_df = pd.read_csv(args.category_override)
+        override_map = dict(zip(override_df["episode_index"].astype(int),
+                                 override_df["category"]))
+        logger.info(
+            "Loaded category override from %s: %d episodes, %d hand-picked categories: %s",
+            args.category_override, len(override_map),
+            len(set(override_map.values())), sorted(set(override_map.values())),
+        )
+        # masks_df['category'] feeds extract_rgb_features()'s y assignment in the
+        # no-cache path; override it here too so both paths agree.
+        masks_df = masks_df[masks_df["episode_idx"].isin(override_map)].copy()
+        masks_df["category"] = masks_df["episode_idx"].map(override_map)
 
     # Load or extract RGB features.
     if args.probe_cache and args.probe_cache.exists():
@@ -167,6 +189,21 @@ def main() -> None:
             episode_idx=episode_idx, frame_idx=frame_idx, instance_id=instance_id,
         )
         # Note: depth_rich_X is extracted later (after filtering) and saved separately.
+
+    if override_map is not None:
+        # Cached probe-features.npz stores y from whatever run produced it (often
+        # Qwen/discovery labels). Re-apply the override here too, so a cached run
+        # doesn't silently keep stale categories.
+        keep_override = np.array([int(e) in override_map for e in episode_idx])
+        n_before = len(y)
+        y = np.array([override_map[int(e)] for e in episode_idx[keep_override]])
+        rgb_X = rgb_X[keep_override]
+        episode_idx = episode_idx[keep_override]
+        meta = [m for m, k in zip(meta, keep_override) if k]
+        logger.info(
+            "Re-applied category override to loaded features: %d/%d instances kept",
+            len(y), n_before,
+        )
 
     n_total = len(y)
     logger.info("Total instances before filtering: %d across %d categories, %d episodes",
